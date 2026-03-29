@@ -9,6 +9,9 @@ typedef struct {
 	bool dev_options = false;
 	bool dark_theme = false;
 	std::string cwd;
+	std::string git_remote_url;
+	std::string git_default_branch;
+	std::string git_pat;
 } config_t;
 
 extern config_t cfg;

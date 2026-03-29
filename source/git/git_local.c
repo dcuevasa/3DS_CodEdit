@@ -13,7 +13,8 @@
 
 #include "git/git.h"
 
-#define GIT_INDEX_FILE ".git/index.cedit"
+#define GIT_INDEX_FILE ".git/index"
+#define GIT_INDEX_FILE_LEGACY ".git/index.cedit"
 #define GIT_MAX_TREE_DEPTH 24
 #define GIT_DEFAULT_FILE_MODE 0100644
 
@@ -834,8 +835,24 @@ static GitResult scan_directory_for_add(FS_Archive archive, const char *repo_roo
     return result;
 }
 
+static bool resolve_stage_index_paths(const char *repo_root,
+    char *out_index_path, size_t out_index_path_len,
+    char *out_legacy_path, size_t out_legacy_path_len) {
+    if (!repo_root || !out_index_path || !out_legacy_path)
+        return false;
+
+    if (!join_path(repo_root, GIT_INDEX_FILE, out_index_path, out_index_path_len))
+        return false;
+
+    if (!join_path(repo_root, GIT_INDEX_FILE_LEGACY, out_legacy_path, out_legacy_path_len))
+        return false;
+
+    return true;
+}
+
 static GitResult write_stage_index(FS_Archive archive, const char *repo_root, const StageList *staged) {
     char index_path[GIT_PATH_MAX];
+    char legacy_path[GIT_PATH_MAX];
     char *text = NULL;
     size_t total = 0;
     size_t i;
@@ -845,11 +862,16 @@ static GitResult write_stage_index(FS_Archive archive, const char *repo_root, co
     if (!repo_root || !staged)
         return GIT_RESULT_INVALID_ARG;
 
-    if (!join_path(repo_root, GIT_INDEX_FILE, index_path, sizeof(index_path)))
+    if (!resolve_stage_index_paths(repo_root, index_path, sizeof(index_path), legacy_path, sizeof(legacy_path)))
         return GIT_RESULT_BUFFER_TOO_SMALL;
 
-    if (staged->count == 0)
-        return write_file_bytes(archive, index_path, (const unsigned char *)"", 0, true);
+    if (staged->count == 0) {
+        result = write_file_bytes(archive, index_path, (const unsigned char *)"", 0, true);
+        if (result == GIT_RESULT_OK)
+            FSUSER_DeleteFile(archive, fsMakePath(PATH_ASCII, legacy_path));
+
+        return result;
+    }
 
     for (i = 0; i < staged->count; i++) {
         total += 8 + GIT_OID_HEX_LEN + 1 + strlen(staged->items[i].path) + 1;
@@ -873,6 +895,10 @@ static GitResult write_stage_index(FS_Archive archive, const char *repo_root, co
 
     result = write_file_bytes(archive, index_path, (const unsigned char *)text, offset, true);
     free(text);
+
+    if (result == GIT_RESULT_OK)
+        FSUSER_DeleteFile(archive, fsMakePath(PATH_ASCII, legacy_path));
+
     return result;
 }
 
@@ -936,6 +962,9 @@ static GitResult parse_stage_line(char *line, StageEntry *out_entry) {
 
 static GitResult load_stage_index(FS_Archive archive, const char *repo_root, StageList *out_staged) {
     char index_path[GIT_PATH_MAX];
+    char legacy_path[GIT_PATH_MAX];
+    const char *selected_index_path = NULL;
+    bool using_legacy_index = false;
     unsigned char *data = NULL;
     size_t size = 0;
     GitResult result;
@@ -945,18 +974,32 @@ static GitResult load_stage_index(FS_Archive archive, const char *repo_root, Sta
     if (!repo_root || !out_staged)
         return GIT_RESULT_INVALID_ARG;
 
-    if (!join_path(repo_root, GIT_INDEX_FILE, index_path, sizeof(index_path)))
+    if (!resolve_stage_index_paths(repo_root, index_path, sizeof(index_path), legacy_path, sizeof(legacy_path)))
         return GIT_RESULT_BUFFER_TOO_SMALL;
 
-    if (!file_exists(archive, index_path))
+    if (file_exists(archive, index_path)) {
+        selected_index_path = index_path;
+    }
+    else if (file_exists(archive, legacy_path)) {
+        selected_index_path = legacy_path;
+        using_legacy_index = true;
+    }
+    else {
         return GIT_RESULT_NO_CHANGES;
+    }
 
-    result = read_file_alloc(archive, index_path, &data, &size);
+    result = read_file_alloc(archive, selected_index_path, &data, &size);
     if (result != GIT_RESULT_OK)
         return result;
 
     if (size == 0) {
         free(data);
+
+        if (using_legacy_index) {
+            if (write_file_bytes(archive, index_path, (const unsigned char *)"", 0, true) == GIT_RESULT_OK)
+                FSUSER_DeleteFile(archive, fsMakePath(PATH_ASCII, legacy_path));
+        }
+
         return GIT_RESULT_NO_CHANGES;
     }
 
@@ -1000,6 +1043,12 @@ static GitResult load_stage_index(FS_Archive archive, const char *repo_root, Sta
         return GIT_RESULT_NO_CHANGES;
 
     stage_list_sort(out_staged);
+
+    if (using_legacy_index) {
+        if (write_stage_index(archive, repo_root, out_staged) == GIT_RESULT_OK)
+            FSUSER_DeleteFile(archive, fsMakePath(PATH_ASCII, legacy_path));
+    }
+
     return GIT_RESULT_OK;
 }
 
@@ -1324,14 +1373,20 @@ static GitResult update_head_or_ref(FS_Archive archive, const char *repo_root, c
 
 static GitResult clear_stage_index(FS_Archive archive, const char *repo_root) {
     char index_path[GIT_PATH_MAX];
+    char legacy_path[GIT_PATH_MAX];
+    GitResult result;
 
     if (!repo_root)
         return GIT_RESULT_INVALID_ARG;
 
-    if (!join_path(repo_root, GIT_INDEX_FILE, index_path, sizeof(index_path)))
+    if (!resolve_stage_index_paths(repo_root, index_path, sizeof(index_path), legacy_path, sizeof(legacy_path)))
         return GIT_RESULT_BUFFER_TOO_SMALL;
 
-    return write_file_bytes(archive, index_path, (const unsigned char *)"", 0, true);
+    result = write_file_bytes(archive, index_path, (const unsigned char *)"", 0, true);
+    if (result == GIT_RESULT_OK)
+        FSUSER_DeleteFile(archive, fsMakePath(PATH_ASCII, legacy_path));
+
+    return result;
 }
 
 GitResult git_get_staged_count(const char *start_path, int *out_staged_count) {

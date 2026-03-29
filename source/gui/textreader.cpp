@@ -20,13 +20,14 @@ namespace GUI {
     static constexpr float editor_line_h = 12.f;
     static constexpr float line_num_w = 34.f;
     static constexpr int visible_lines = 14;
+    static constexpr int visible_columns = 72;
 
     static constexpr int sidebar_visible_entries = 8;
     static constexpr int sidebar_row_height = 17;
     static constexpr int sidebar_list_y = 78;
 
     static constexpr int top_menu_count = 5;
-    static const char *top_menu_labels[top_menu_count] = { "Archivo", "Editar", "Buscar", "Ver", "Proyecto" };
+    static const char *top_menu_labels[top_menu_count] = { "File", "Edit", "Search", "View", "Project" };
     static const float top_menu_x[top_menu_count] = { 8.f, 78.f, 140.f, 206.f, 252.f };
     static const float top_menu_w[top_menu_count] = { 66.f, 58.f, 60.f, 40.f, 78.f };
 
@@ -192,23 +193,23 @@ namespace GUI {
 
     static void ExecuteTopMenuAction(MenuItem *item) {
         switch (top_menu_index) {
-            case 0: // Archivo
-                SaveActiveDocument();
+            case 0: // File
+                item->state = MENU_STATE_OPTIONS;
                 break;
 
-            case 1: // Editar
+            case 1: // Edit
                 EditCurrentLineWithOSK();
                 break;
 
-            case 2: // Buscar
+            case 2: // Search
                 FindText();
                 break;
 
-            case 3: // Ver
+            case 3: // View
                 TextEditor::InsertNewLine();
                 break;
 
-            case 4: // Proyecto
+            case 4: // Project
                 item->state = MENU_STATE_GIT;
                 break;
 
@@ -288,13 +289,13 @@ namespace GUI {
 
             const std::string &line = doc->lines[line_index];
             C2D::Textf(line_num_w + 2.f, y, 0.33f, cfg.dark_theme ? WHITE : BLACK,
-                line.length() > 58 ? "%.58s" : "%s", line.c_str());
+                "%.*s", visible_columns, line.c_str());
         }
 
         int cursor_row = doc->cursor_line - start_line;
         if (cursor_row >= 0 && cursor_row < visible_lines) {
             const std::string &cursor_line_text = doc->lines[doc->cursor_line];
-            int visible_col = std::min(doc->cursor_col, 58);
+            int visible_col = std::min(doc->cursor_col, visible_columns);
             std::string prefix = cursor_line_text.substr(0, static_cast<size_t>(visible_col));
 
             float prefix_width = 0.f;
@@ -326,11 +327,11 @@ namespace GUI {
 
         if (top_menu_focus) {
             C2D::Textf(6, 63, 0.29f, cfg.dark_theme ? WHITE : TEXT_MIN_COLOUR_LIGHT,
-                "Menu %s: A ejecutar | B cerrar", top_menu_labels[top_menu_index]);
+                "Menu %s: A run | B close", top_menu_labels[top_menu_index]);
         }
         else {
             C2D::Text(6, 63, 0.29f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
-                "CirclePad cursor  DPad U/D archivos  <- subir");
+                "CirclePad cursor  DPad U/D files  <- parent");
         }
 
         EnsureSidebarSelection(item);
@@ -359,11 +360,11 @@ namespace GUI {
 
         if (top_menu_focus) {
             C2D::Text(6, 203, 0.29f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
-                "Izq/Der: menu  A: ejecutar  B: cerrar");
+                "Left/Right: menu  A: run  B: close");
         }
         else {
             C2D::Text(6, 203, 0.29f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
-                "A abrir  B borrar  X editar  Y salto  -> cerrar");
+                "A open  B delete  X edit  Y newline  -> close");
         }
     }
 

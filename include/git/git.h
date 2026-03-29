@@ -30,6 +30,28 @@ GitResult git_get_staged_count(const char *start_path, int *out_staged_count);
 GitResult git_add_all(const char *start_path, char *out_message, size_t out_message_len);
 GitResult git_commit(const char *start_path, const char *message, char *out_commit_oid, size_t out_commit_oid_len,
     char *out_message, size_t out_message_len);
+GitResult git_remote_probe_github(const char *remote_url, const char *token,
+    char *out_default_branch, size_t out_default_branch_len,
+    char *out_head_oid, size_t out_head_oid_len,
+    char *out_message, size_t out_message_len);
+GitResult git_remote_clone_github(const char *target_path, const char *remote_url, const char *branch_hint, const char *token,
+    char *out_default_branch, size_t out_default_branch_len,
+    char *out_head_oid, size_t out_head_oid_len,
+    char *out_message, size_t out_message_len);
+GitResult git_remote_fetch_github(const char *start_path, const char *remote_url, const char *branch_hint, const char *token,
+    bool *out_has_updates,
+    char *out_branch, size_t out_branch_len,
+    char *out_head_oid, size_t out_head_oid_len,
+    char *out_message, size_t out_message_len);
+GitResult git_remote_pull_github(const char *start_path, const char *remote_url, const char *branch_hint, const char *token,
+    char *out_branch, size_t out_branch_len,
+    char *out_head_oid, size_t out_head_oid_len,
+    char *out_message, size_t out_message_len);
+GitResult git_remote_push_github(const char *start_path, const char *remote_url, const char *branch_hint,
+    const char *token, const char *commit_message,
+    char *out_branch, size_t out_branch_len,
+    char *out_head_oid, size_t out_head_oid_len,
+    char *out_message, size_t out_message_len);
 
 #ifdef __cplusplus
 }

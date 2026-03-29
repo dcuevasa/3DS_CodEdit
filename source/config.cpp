@@ -11,14 +11,22 @@
 config_t cfg;
 
 namespace Config {
-    static const char *config_file = "{\n\t\"config_ver\": %d,\n\t\"sort\": %d,\n\t\"dev_options\": %d,\n\t\"dark_theme\": %d,\n\t\"last_dir\": \"%s\"\n}";
+    static const char *config_file = "{\n\t\"config_ver\": %d,\n\t\"sort\": %d,\n\t\"dev_options\": %d,\n\t\"dark_theme\": %d,\n\t\"last_dir\": \"%s\",\n\t\"git_remote_url\": \"%s\",\n\t\"git_default_branch\": \"%s\",\n\t\"git_pat\": \"%s\"\n}";
     static int config_version_holder = 0;
     static std::string config_path = "/3ds/3DS_CodEdit/config.json";
     
     int Save(config_t config) {
         Result ret = 0;
-        char *buf = new char[1024];
-        u32 length = std::snprintf(buf, 1024, config_file, CONFIG_VERSION, config.sort, config.dev_options, config.dark_theme, config.cwd.c_str());
+        char *buf = new char[4096];
+        u32 length = std::snprintf(buf, 4096, config_file,
+            CONFIG_VERSION,
+            config.sort,
+            config.dev_options,
+            config.dark_theme,
+            config.cwd.c_str(),
+            config.git_remote_url.c_str(),
+            config.git_default_branch.c_str(),
+            config.git_pat.c_str());
         
         // Delete and re-create the file, we don't care about the return value here.
         FSUSER_DeleteFile(sdmc_archive, fsMakePath(PATH_ASCII, config_path.c_str()));
@@ -55,6 +63,9 @@ namespace Config {
         config->dev_options = false;
         config->dark_theme = false;
         config->cwd = "/";
+        config->git_remote_url.clear();
+        config->git_default_branch = "main";
+        config->git_pat.clear();
     }
     
     int Load(void) {
@@ -118,7 +129,16 @@ namespace Config {
         cfg.dark_theme = json_integer_value(dark_theme);
         
         json_t *last_dir = json_object_get(root, "last_dir");
-        cfg.cwd = json_string_value(last_dir);
+        cfg.cwd = json_is_string(last_dir) ? json_string_value(last_dir) : "/";
+
+        json_t *git_remote_url = json_object_get(root, "git_remote_url");
+        cfg.git_remote_url = json_is_string(git_remote_url) ? json_string_value(git_remote_url) : "";
+
+        json_t *git_default_branch = json_object_get(root, "git_default_branch");
+        cfg.git_default_branch = json_is_string(git_default_branch) ? json_string_value(git_default_branch) : "main";
+
+        json_t *git_pat = json_object_get(root, "git_pat");
+        cfg.git_pat = json_is_string(git_pat) ? json_string_value(git_pat) : "";
 
         if (!FS::DirExists(sdmc_archive, cfg.cwd))
             cfg.cwd = "/";
