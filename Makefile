@@ -33,7 +33,7 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/editor source/gui libs/libnsbmp/src libs/libnsgif/src
+SOURCES		:=	source source/editor source/gui source/git libs/libnsbmp/src libs/libnsgif/src
 DATA		:=	data
 INCLUDES	:=	include libs/libnsbmp/include libs/libnsgif/include
 GRAPHICS	:=	res/drawable

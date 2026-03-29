@@ -14,6 +14,7 @@ enum MENU_STATES {
     MENU_STATE_IMAGEVIEWER,
     MENU_STATE_ARCHIVEEXTRACT,
     MENU_STATE_TEXTREADER,
+    MENU_STATE_GIT,
     MENU_STATE_UPDATE
 };
 
@@ -53,6 +54,8 @@ namespace GUI {
     void DisplayTextReaderTop(MenuItem *item);
     void DisplayTextReaderBottom(MenuItem *item);
     void ControlTextReader(MenuItem *item, u32 *kDown, u32 *kHeld);
+    void DisplayGitView(MenuItem *item);
+    void ControlGitView(MenuItem *item, u32 *kDown, u32 *kHeld);
     void DisplayDeleteOptions(MenuItem *item);
     void ControlDeleteOptions(MenuItem *item, u32 *kDown);
     void DisplayUpdateOptions(bool *connection_status, bool *available, const std::string &tag);

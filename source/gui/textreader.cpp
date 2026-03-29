@@ -209,7 +209,7 @@ namespace GUI {
                 break;
 
             case 4: // Proyecto
-                item->state = MENU_STATE_FILEBROWSER;
+                item->state = MENU_STATE_GIT;
                 break;
 
             default:

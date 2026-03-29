@@ -172,10 +172,10 @@ namespace GUI {
             C2D::Rect(0, 15, 400, 25, cfg.dark_theme? MENU_BAR_DARK : MENU_BAR_LIGHT);
             GUI::DisplayStatusBar();
 
-            if (item.state == MENU_STATE_TEXTREADER)
+            if ((item.state == MENU_STATE_TEXTREADER) || (item.state == MENU_STATE_GIT))
                 GUI::DisplayTextReaderMenuBar();
 
-            if (item.state == MENU_STATE_TEXTREADER)
+            if ((item.state == MENU_STATE_TEXTREADER) || (item.state == MENU_STATE_GIT))
                 GUI::DisplayTextReaderTop(&item);
             else {
                 GUI::DisplayFileBrowser(&item);
@@ -188,6 +188,8 @@ namespace GUI {
             C2D::Rect(0, 0, 320, 20, cfg.dark_theme? STATUS_BAR_DARK : MENU_BAR_LIGHT);
             if (item.state == MENU_STATE_TEXTREADER)
                 C2D::Text(6, 3, 0.36f, WHITE, "Explorer");
+            else if (item.state == MENU_STATE_GIT)
+                C2D::Text(6, 3, 0.36f, WHITE, "Project");
             else
                 GUI::DisplayTouchButtons(&item);
 
@@ -214,6 +216,10 @@ namespace GUI {
 
                 case MENU_STATE_TEXTREADER:
                     DisplayTextReaderBottom(&item);
+                    break;
+
+                case MENU_STATE_GIT:
+                    DisplayGitView(&item);
                     break;
 
                 default:
@@ -256,11 +262,15 @@ namespace GUI {
                     GUI::ControlTextReader(&item, &kDown, &kHeld);
                     break;
 
+                case MENU_STATE_GIT:
+                    GUI::ControlGitView(&item, &kDown, &kHeld);
+                    break;
+
                 default:
                     break;
             }
 
-            if (item.state != MENU_STATE_TEXTREADER)
+            if ((item.state != MENU_STATE_TEXTREADER) && (item.state != MENU_STATE_GIT))
                 GUI::ControlTouchButtons(&item, &kDown);
 
             if ((kDown & KEY_START) || (setjmp(exit_jmp)))
