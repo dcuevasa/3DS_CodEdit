@@ -38,7 +38,7 @@ namespace GUI {
             if (R_FAILED(ret = FSUSER_DeleteFile(sdmc_archive, fsMakePath(PATH_ASCII, __application_path__.c_str()))))
                 Log::Error("FSUSER_DeleteFile(%s) failed: 0x%x\n", __application_path__, ret);
                 
-            if (R_FAILED(ret = FSUSER_RenameFile(sdmc_archive, fsMakePath(PATH_ASCII, "/3ds/3DShell/3DShell_UPDATE.3dsx"), sdmc_archive, fsMakePath(PATH_ASCII, __application_path__.c_str()))))
+            if (R_FAILED(ret = FSUSER_RenameFile(sdmc_archive, fsMakePath(PATH_ASCII, "/3ds/3DS_CodEdit/3DS_CodEdit_UPDATE.3dsx"), sdmc_archive, fsMakePath(PATH_ASCII, __application_path__.c_str()))))
                 Log::Error("FSUSER_RenameFile(update) failed: 0x%x\n", ret);
         }
         else

@@ -1,12 +1,8 @@
-# 3DShell ![Github latest downloads](https://img.shields.io/github/downloads/joel16/3DShell/total.svg)
+# 3DS CodEdit
 
 Purpose:
 --------------------------------------------------------------------------------
-3DShell (3D-Shell) - is a multi-purpose file manager for the Nintendo 3DS that aims towards handling media files. Unlike [FBI](https://github.com/Steveice10/FBI) which specializes more in title management, 3DShell leans towards more of the file management features such as opening and managing various files types and includes the basic necessity of a standard file manager. This program's design elements are clearly inspired by CyanogenMod/LineageOS's built in file manager, and so all credits towards the design go to the CyanogenMod/LineageOS contributors.
-
-<p align="center">
-  <img src="https://i.imgur.com/e9I3sBc.png" alt="3DShell Screenshot"/>
-</p>
+3DS CodEdit is a lightweight code editor and file manager for Nintendo 3DS. This project started as a fork of 3DShell and now has its own install target, and data paths.
 
 Current features:
 --------------------------------------------------------------------------------
@@ -27,31 +23,64 @@ Current features:
 - Dir list sorting (alphabetical - ascending, alphabetical - descending, size - largest to smallest, and size - smallest to largest).
 - Online updater
 
-Building from source:
+Building from source (Linux):
 --------------------------------------------------------------------------------
-1. Ensure you have the devkitPro, ctrulib and citro3D and citro2D installed correctly. Make sure you have [makerom](https://github.com/profi200/Project_CTR) and [bannertool](https://github.com/Steveice10/bannertool) installed into your path as well.
+The steps below are written for Debian/Ubuntu based systems and should work in WSL as well.
 
-2. Install the following dependecies from [devkitPro's pacman](https://devkitpro.org/viewtopic.php?f=13&t=8702):
-* `sudo dkp-pacman -Syu 3ds-dev --noconfirm --needed`
-* `sudo dkp-pacman -Syu 3ds-curl --noconfirm --force`
-* `sudo dkp-pacman -Syu 3ds-libarchive 3ds-jansson 3ds-libjpeg-turbo 3ds-libpng --noconfirm`
+1. Install devkitPro pacman (one-time setup):
+```bash
+sudo apt update
+sudo apt install -y devkitpro-pacman
+```
 
-3. Clone the 3DShell repository:
+2. Install 3DS toolchain and required libraries:
 ```bash
-git clone --recursive https://github.com/joel16/3DShell.git
+sudo dkp-pacman -Syu --needed 3ds-dev 3ds-curl 3ds-libarchive 3ds-jansson 3ds-libjpeg-turbo 3ds-libpng --noconfirm
 ```
-4. Open the project diretory:
+
+3. Configure environment variables (one-time setup):
 ```bash
-cd 3DShell/
+echo 'export DEVKITPRO=/opt/devkitpro' >> ~/.bashrc
+echo 'export DEVKITARM=${DEVKITPRO}/devkitARM' >> ~/.bashrc
+echo 'export PATH=${DEVKITARM}/bin:${DEVKITPRO}/tools/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
 ```
-5. Build the binary using make:
+
+4. Install packaging tools used for CIA output:
+- `makerom`: [3DSGuy/Project_CTR](https://github.com/3DSGuy/Project_CTR)
+- `bannertool`: [carstene1ns/3ds-bannertool](https://github.com/carstene1ns/3ds-bannertool/releases/latest)
+
+Make sure both commands are available in your PATH:
 ```bash
+makerom --help
+bannertool --help
+```
+
+5. Clone and build:
+```bash
+git clone --recursive https://github.com/dcuevasa/3DS_CodEdit.git
+cd 3DS_CodEdit
+make clean
 make
 ```
 
+Build output:
+- `3DS_CodEdit.3dsx`
+- `3DS_CodEdit.cia` (requires `makerom` and `bannertool`)
+
+Troubleshooting:
+- If you see `error: invalid option '--force'`, remove `--force` from old commands. Newer `dkp-pacman` versions do not support it.
+- If you see `bannertool: command not found`, install it and add it to PATH, or build with explicit paths:
+
+```bash
+make BANNERTOOL=/path/to/bannertool MAKEROM=/path/to/makerom
+```
+
+- If CIA packaging fails but `3DS_CodEdit.3dsx` exists, the homebrew build succeeded and only the CIA packaging step failed.
+
 Credits:
 --------------------------------------------------------------------------------
-- deltabeard/MaK11-12 for the inital ctrmus code port which was used in previous versions.
+- deltabeard/MaK11-12 for the initial ctrmus code port which was used in previous versions.
 - mtheall for ftpd.
 - preetisketch for the banner.
 - FrozenFire for the boot logo.

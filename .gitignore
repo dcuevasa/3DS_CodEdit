@@ -26,4 +26,8 @@ build/
 romfs/
 
 # 3DS executables
-3DShell.*
+3DS_CodEdit.*
+
+*.3dsx
+*.cia
+*.smdh

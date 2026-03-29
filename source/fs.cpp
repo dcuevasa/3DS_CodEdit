@@ -2,6 +2,7 @@
 #include <codecvt>
 #include <cstring>
 #include <filesystem>
+#include <limits>
 #include <locale>
 
 #include "config.h"
@@ -66,6 +67,102 @@ namespace FS {
             
         return true;
     }
+
+    Result ReadFileToString(const std::string &path, std::string &content) {
+        content.clear();
+
+        Result ret = 0;
+        Handle file;
+        std::u16string path_u16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(path.data());
+
+        if (R_FAILED(ret = FSUSER_OpenFile(&file, archive, fsMakePath(PATH_UTF16, path_u16.c_str()), FS_OPEN_READ, 0))) {
+            Log::Error("FSUSER_OpenFile(%s) failed: 0x%x\n", path.c_str(), ret);
+            return ret;
+        }
+
+        u64 size = 0;
+        if (R_FAILED(ret = FSFILE_GetSize(file, &size))) {
+            Log::Error("FSFILE_GetSize(%s) failed: 0x%x\n", path.c_str(), ret);
+            FSFILE_Close(file);
+            return ret;
+        }
+
+        if (size == 0) {
+            FSFILE_Close(file);
+            return 0;
+        }
+
+        if (size > std::numeric_limits<u32>::max()) {
+            FSFILE_Close(file);
+            return -1;
+        }
+
+        std::vector<char> buf(static_cast<size_t>(size));
+        u32 bytes_read = 0;
+        if (R_FAILED(ret = FSFILE_Read(file, &bytes_read, 0, buf.data(), static_cast<u32>(size)))) {
+            Log::Error("FSFILE_Read(%s) failed: 0x%x\n", path.c_str(), ret);
+            FSFILE_Close(file);
+            return ret;
+        }
+
+        FSFILE_Close(file);
+
+        if (bytes_read != static_cast<u32>(size))
+            return -1;
+
+        content.assign(buf.begin(), buf.end());
+        return 0;
+    }
+
+    Result WriteFileFromString(const std::string &path, const std::string &content) {
+        Result ret = 0;
+        Handle file;
+        std::u16string path_u16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(path.data());
+
+        // Ignore delete failures, the target may not exist.
+        FSUSER_DeleteFile(archive, fsMakePath(PATH_UTF16, path_u16.c_str()));
+
+        u64 size = static_cast<u64>(content.size());
+        if (R_FAILED(ret = FSUSER_CreateFile(archive, fsMakePath(PATH_UTF16, path_u16.c_str()), 0, size))) {
+            Log::Error("FSUSER_CreateFile(%s) failed: 0x%x\n", path.c_str(), ret);
+            return ret;
+        }
+
+        if (R_FAILED(ret = FSUSER_OpenFile(&file, archive, fsMakePath(PATH_UTF16, path_u16.c_str()), FS_OPEN_WRITE, 0))) {
+            Log::Error("FSUSER_OpenFile(%s) failed: 0x%x\n", path.c_str(), ret);
+            return ret;
+        }
+
+        if (R_FAILED(ret = FSFILE_SetSize(file, size))) {
+            Log::Error("FSFILE_SetSize(%s) failed: 0x%x\n", path.c_str(), ret);
+            FSFILE_Close(file);
+            return ret;
+        }
+
+        if (size == 0) {
+            FSFILE_Close(file);
+            return 0;
+        }
+
+        if (size > std::numeric_limits<u32>::max()) {
+            FSFILE_Close(file);
+            return -1;
+        }
+
+        u32 bytes_written = 0;
+        if (R_FAILED(ret = FSFILE_Write(file, &bytes_written, 0, content.data(), static_cast<u32>(size), FS_WRITE_FLUSH))) {
+            Log::Error("FSFILE_Write(%s) failed: 0x%x\n", path.c_str(), ret);
+            FSFILE_Close(file);
+            return ret;
+        }
+
+        FSFILE_Close(file);
+
+        if (bytes_written != static_cast<u32>(size))
+            return -1;
+
+        return 0;
+    }
     
     std::string GetFileExt(const std::string &filename) {
         std::string ext = std::filesystem::path(filename).extension();
@@ -79,7 +176,12 @@ namespace FS {
         if ((!ext.compare(".BMP")) || (!ext.compare(".GIF")) || (!ext.compare(".JPG")) || (!ext.compare(".JPEG")) || (!ext.compare(".PGM"))
             || (!ext.compare(".PPM")) || (!ext.compare(".PNG")) || (!ext.compare(".PSD")) || (!ext.compare(".TGA")) || (!ext.compare(".WEBP")))
             return FileTypeImage;
-        else if ((!ext.compare(".JSON")) || (!ext.compare(".LOG")) || (!ext.compare(".TXT")) || (!ext.compare(".CFG")) || (!ext.compare(".INI")))
+        else if ((!ext.compare(".JSON")) || (!ext.compare(".LOG")) || (!ext.compare(".TXT")) || (!ext.compare(".CFG")) || (!ext.compare(".INI"))
+            || (!ext.compare(".C")) || (!ext.compare(".H")) || (!ext.compare(".CPP")) || (!ext.compare(".HPP")) || (!ext.compare(".CC"))
+            || (!ext.compare(".CXX")) || (!ext.compare(".LUA")) || (!ext.compare(".PY")) || (!ext.compare(".JS")) || (!ext.compare(".TS"))
+            || (!ext.compare(".CS")) || (!ext.compare(".JAVA")) || (!ext.compare(".RS")) || (!ext.compare(".MD")) || (!ext.compare(".XML"))
+            || (!ext.compare(".HTML")) || (!ext.compare(".HTM")) || (!ext.compare(".CSS")) || (!ext.compare(".YAML")) || (!ext.compare(".YML"))
+            || (!ext.compare(".TOML")) || (!ext.compare(".SH")) || (!ext.compare(".BAT")))
             return FileTypeText;
         else if ((!ext.compare(".ZIP")) || (!ext.compare(".RAR")) || (!ext.compare(".7Z")) || (!ext.compare(".LZMA")))
             return FileTypeZip;

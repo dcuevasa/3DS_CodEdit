@@ -6,6 +6,7 @@
 #include "c2d_helper.h"
 #include "colours.h"
 #include "config.h"
+#include "editor/text_editor.h"
 #include "fs.h"
 #include "gui.h"
 #include "textures.h"
@@ -126,6 +127,11 @@ namespace GUI {
                     case FileTypeImage:
                         if (Textures::LoadImageFile(path, &item->texture))
                             item->state = MENU_STATE_IMAGEVIEWER;
+                        break;
+
+                    case FileTypeText:
+                        if (TextEditor::OpenFile(path))
+                            item->state = MENU_STATE_TEXTREADER;
                         break;
 
                     case FileTypeZip:

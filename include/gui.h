@@ -49,6 +49,9 @@ namespace GUI {
     void DisplayImageViewerTop(MenuItem *item);
     void DisplayImageViewerBottom(MenuItem *item);
     void ControlImageViewer(MenuItem *item, u32 *kDown, u32 *kHeld, u64 *delta_time);
+    void DisplayTextReaderTop(MenuItem *item);
+    void DisplayTextReaderBottom(MenuItem *item);
+    void ControlTextReader(MenuItem *item, u32 *kDown, u32 *kHeld);
     void DisplayDeleteOptions(MenuItem *item);
     void ControlDeleteOptions(MenuItem *item, u32 *kDown);
     void DisplayUpdateOptions(bool *connection_status, bool *available, const std::string &tag);

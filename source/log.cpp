@@ -10,7 +10,7 @@ namespace Log {
 
     Result Open(void) {
         Result ret = 0;
-        std::string path = "/3ds/3DShell/debug.log";
+        std::string path = "/3ds/3DS_CodEdit/debug.log";
 
         // Delete existing logs on start up.
         if (FS::FileExists(sdmc_archive, path))

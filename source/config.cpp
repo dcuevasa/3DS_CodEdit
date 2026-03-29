@@ -13,7 +13,7 @@ config_t cfg;
 namespace Config {
     static const char *config_file = "{\n\t\"config_ver\": %d,\n\t\"sort\": %d,\n\t\"dev_options\": %d,\n\t\"dark_theme\": %d,\n\t\"last_dir\": \"%s\"\n}";
     static int config_version_holder = 0;
-    static std::string config_path = "/3ds/3DShell/config.json";
+    static std::string config_path = "/3ds/3DS_CodEdit/config.json";
     
     int Save(config_t config) {
         Result ret = 0;
@@ -26,14 +26,14 @@ namespace Config {
         
         Handle file;
         if (R_FAILED(ret = FSUSER_OpenFile(&file, sdmc_archive, fsMakePath(PATH_ASCII, config_path.c_str()), FS_OPEN_WRITE, 0))) {
-            Log::Error("FSUSER_OpenFile(/3ds/3DShell/config.json) failed: 0x%x\n", ret);
+            Log::Error("FSUSER_OpenFile(/3ds/3DS_CodEdit/config.json) failed: 0x%x\n", ret);
             delete[] buf;
             return ret;
         }
         
         u32 bytes_written = 0;
         if (R_FAILED(ret = FSFILE_Write(file, &bytes_written, 0, buf, length, FS_WRITE_FLUSH))) {
-            Log::Error("FSFILE_Write(/3ds/3DShell/config.json) failed: 0x%x\n", ret);
+            Log::Error("FSFILE_Write(/3ds/3DS_CodEdit/config.json) failed: 0x%x\n", ret);
             FSFILE_Close(file);
             delete[] buf;
             return ret;
@@ -62,8 +62,8 @@ namespace Config {
         
         if (!FS::DirExists(sdmc_archive, "/3ds/"))
             FSUSER_CreateDirectory(sdmc_archive, fsMakePath(PATH_ASCII, "/3ds"), 0);
-        if (!FS::DirExists(sdmc_archive, "/3ds/3DShell/"))
-            FSUSER_CreateDirectory(sdmc_archive, fsMakePath(PATH_ASCII, "/3ds/3DShell"), 0);
+        if (!FS::DirExists(sdmc_archive, "/3ds/3DS_CodEdit/"))
+            FSUSER_CreateDirectory(sdmc_archive, fsMakePath(PATH_ASCII, "/3ds/3DS_CodEdit"), 0);
             
         if (!FS::FileExists(sdmc_archive, config_path.c_str())) {
             Config::SetDefault(&cfg);

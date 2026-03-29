@@ -20,6 +20,8 @@ namespace FS {
     Result CloseArchive(FS_Archive archive);
     bool FileExists(FS_Archive archive, const std::string &path);
     bool DirExists(FS_Archive archive, const std::string &path);
+    Result ReadFileToString(const std::string &path, std::string &content);
+    Result WriteFileFromString(const std::string &path, const std::string &content);
     std::string GetFileExt(const std::string &filename);
     u64 GetTotalStorage(FS_SystemMediaType mediatype);
     u64 GetUsedStorage(FS_SystemMediaType mediatype);

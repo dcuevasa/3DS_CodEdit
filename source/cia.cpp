@@ -7,7 +7,7 @@
 #include "log.h"
 
 namespace CIA {
-    static const std::string path = "/3ds/3DShell/3DShell_UPDATE.cia";
+    static const std::string path = "/3ds/3DS_CodEdit/3DS_CodEdit_UPDATE.cia";
 
     static Result LaunchTitle(u64 titleId) {
         Result ret = 0;
@@ -77,7 +77,7 @@ namespace CIA {
             }
             
             offset += bytes_read;
-            GUI::ProgressBar("Installing", "3DShell_UPDATE.cia", offset, size);
+            GUI::ProgressBar("Installing", "3DS_CodEdit_UPDATE.cia", offset, size);
         } while(offset < size);
         
         if (bytes_read != bytes_written) {

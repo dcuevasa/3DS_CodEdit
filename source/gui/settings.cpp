@@ -108,8 +108,8 @@ namespace GUI {
         C2D::Text(10, 58, 0.44f, cfg.dark_theme? WHITE : BLACK, "Check for updates");
         C2D::Text(10, 74, 0.42f, cfg.dark_theme? WHITE : BLACK, "Downloads and installs the latest version.");
         C2D::Text(10, 98, 0.44f, cfg.dark_theme? WHITE : BLACK, "About");
-        C2D::Textf(10, 114, 0.42f, cfg.dark_theme? WHITE : BLACK, "3DShell v%d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_MICRO);
-        C2D::Text(10, 138, 0.44f, cfg.dark_theme? WHITE : BLACK, "Author: Joel16");
+        C2D::Textf(10, 114, 0.42f, cfg.dark_theme? WHITE : BLACK, "3DS CodEdit v%d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_MICRO);
+        C2D::Text(10, 138, 0.44f, cfg.dark_theme? WHITE : BLACK, "Author: dcuevasa");
         C2D::Text(10, 154, 0.42f, cfg.dark_theme? WHITE : BLACK, "Assets: Preetisketch/CyanogenMod/LineageOS");
 
         if (update_popup)

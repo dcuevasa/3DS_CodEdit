@@ -33,7 +33,7 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/gui libs/libnsbmp/src libs/libnsgif/src
+SOURCES		:=	source source/editor source/gui libs/libnsbmp/src libs/libnsgif/src
 DATA		:=	data
 INCLUDES	:=	include libs/libnsbmp/include libs/libnsgif/include
 GRAPHICS	:=	res/drawable
@@ -46,17 +46,17 @@ VERSION_MAJOR	:=	5
 VERSION_MINOR	:=	1
 VERSION_MICRO	:=	0
 
-APP_TITLE	:=	3DShell
-APP_DESCRIPTION	:=	Multi-purpose file manager
-APP_AUTHOR	:=	Joel16
+APP_TITLE	:=	3DS CodEdit
+APP_DESCRIPTION	:=	Code editor and file manager
+APP_AUTHOR	:=	dcuevasa
 
 # CIA
 BANNER_AUDIO	:=	res/banner.wav
 BANNER_IMAGE	:=	res/banner.png
 RSF_PATH	:=	res/app.rsf
 LOGO		:=	res/logo.lz11
-UNIQUE_ID	:=	0x16200
-PRODUCT_CODE	:=	CTR-3D-SHEL
+UNIQUE_ID	:=	0x3DCE1
+PRODUCT_CODE	:=	CTR-P-CDET
 ICON_FLAGS	:=	nosavebackups,visible
 
 #---------------------------------------------------------------------------------

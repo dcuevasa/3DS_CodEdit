@@ -57,7 +57,7 @@ namespace GUI {
         while(download_progress) {
             download_size = (download_size < 1.0f)? 1.0f : download_size;
             download_size = (download_size < download_offset)? download_offset : download_size;
-            GUI::ProgressBar("Downloading", envIsHomebrew()? "3DShell.3dsx" : "3DShell.cia", download_offset, download_size);
+            GUI::ProgressBar("Downloading", envIsHomebrew()? "3DS_CodEdit.3dsx" : "3DS_CodEdit.cia", download_offset, download_size);
         }
     }
 
@@ -167,11 +167,15 @@ namespace GUI {
             C2D::Rect(0, 0, 400, 15, cfg.dark_theme? STATUS_BAR_DARK : STATUS_BAR_LIGHT);
             C2D::Rect(0, 15, 400, 25, cfg.dark_theme? MENU_BAR_DARK : MENU_BAR_LIGHT);
             GUI::DisplayStatusBar();
-            
-            GUI::DisplayFileBrowser(&item);
 
-            if (item.state == MENU_STATE_IMAGEVIEWER)
-                GUI::DisplayImageViewerTop(&item);
+            if (item.state == MENU_STATE_TEXTREADER)
+                GUI::DisplayTextReaderTop(&item);
+            else {
+                GUI::DisplayFileBrowser(&item);
+
+                if (item.state == MENU_STATE_IMAGEVIEWER)
+                    GUI::DisplayImageViewerTop(&item);
+            }
 
             C2D_SceneBegin(bottom_screen);
             C2D::Rect(0, 0, 320, 20, cfg.dark_theme? STATUS_BAR_DARK : MENU_BAR_LIGHT);
@@ -196,6 +200,10 @@ namespace GUI {
 
                 case MENU_STATE_IMAGEVIEWER:
                     DisplayImageViewerBottom(&item);
+                    break;
+
+                case MENU_STATE_TEXTREADER:
+                    DisplayTextReaderBottom(&item);
                     break;
 
                 default:
@@ -232,6 +240,10 @@ namespace GUI {
 
                 case MENU_STATE_IMAGEVIEWER:
                     GUI::ControlImageViewer(&item, &kDown, &kHeld, &delta_time);
+                    break;
+
+                case MENU_STATE_TEXTREADER:
+                    GUI::ControlTextReader(&item, &kDown, &kHeld);
                     break;
 
                 default:
