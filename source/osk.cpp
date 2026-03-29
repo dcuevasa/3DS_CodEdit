@@ -11,7 +11,7 @@ namespace OSK {
         static SwkbdStatusData swkbdStatus;
         static SwkbdLearningData swkbdLearning;
         bool reload = false;
-        char input_string[256];
+        char input_string[256] = { 0 };
         
         swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, 256);
         
@@ -41,7 +41,10 @@ namespace OSK {
         swkbdSetLearningData(&swkbd, &swkbdLearning, reload, true);
         reload = true;
         
-        swkbdInputText(&swkbd, input_string, 256);
+        SwkbdButton button = swkbdInputText(&swkbd, input_string, 256);
+        if (button != SWKBD_BUTTON_RIGHT)
+            return "";
+
         return input_string;
     }
 }

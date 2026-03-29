@@ -360,6 +360,25 @@ namespace TextEditor {
         doc->dirty = true;
     }
 
+    void InsertNewLine(void) {
+        InsertText("\n");
+    }
+
+    bool ReplaceCurrentLine(const std::string &text) {
+        Document *doc = GetActiveMutable();
+        if (doc == nullptr)
+            return false;
+
+        PushUndoSnapshot(doc);
+
+        doc->lines[doc->cursor_line] = text;
+        if (doc->cursor_col > static_cast<int>(text.size()))
+            doc->cursor_col = static_cast<int>(text.size());
+
+        doc->dirty = true;
+        return true;
+    }
+
     bool Undo(void) {
         Document *doc = GetActiveMutable();
         if (doc == nullptr || doc->undo_stack.empty())

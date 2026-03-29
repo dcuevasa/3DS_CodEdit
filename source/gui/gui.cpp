@@ -3,6 +3,7 @@
 #include "c2d_helper.h"
 #include "colours.h"
 #include "config.h"
+#include "editor/text_editor.h"
 #include "fs.h"
 #include "gui.h"
 #include "net.h"
@@ -143,11 +144,14 @@ namespace GUI {
         Result ret = 0;
 
         MenuItem item;
-        item.state = MENU_STATE_FILEBROWSER;
+        item.state = MENU_STATE_TEXTREADER;
         item.selected = 0;
 
-		if (R_FAILED(ret = FS::GetDirList(cfg.cwd, item.entries)))
-			return ret;
+        if (!TextEditor::HasActiveDocument())
+            TextEditor::NewFile("untitled.txt");
+
+        if (R_FAILED(ret = FS::GetDirList(cfg.cwd, item.entries)))
+            return ret;
             
         GUI::ResetCheckbox(&item);
         GUI::RecalcStorageSize(&item);
@@ -169,6 +173,9 @@ namespace GUI {
             GUI::DisplayStatusBar();
 
             if (item.state == MENU_STATE_TEXTREADER)
+                GUI::DisplayTextReaderMenuBar();
+
+            if (item.state == MENU_STATE_TEXTREADER)
                 GUI::DisplayTextReaderTop(&item);
             else {
                 GUI::DisplayFileBrowser(&item);
@@ -179,7 +186,10 @@ namespace GUI {
 
             C2D_SceneBegin(bottom_screen);
             C2D::Rect(0, 0, 320, 20, cfg.dark_theme? STATUS_BAR_DARK : MENU_BAR_LIGHT);
-            GUI::DisplayTouchButtons(&item);
+            if (item.state == MENU_STATE_TEXTREADER)
+                C2D::Text(6, 3, 0.36f, WHITE, "Explorer");
+            else
+                GUI::DisplayTouchButtons(&item);
 
             switch (item.state) {
                 case MENU_STATE_OPTIONS:
@@ -250,7 +260,8 @@ namespace GUI {
                     break;
             }
 
-            GUI::ControlTouchButtons(&item, &kDown);
+            if (item.state != MENU_STATE_TEXTREADER)
+                GUI::ControlTouchButtons(&item, &kDown);
 
             if ((kDown & KEY_START) || (setjmp(exit_jmp)))
                 break;

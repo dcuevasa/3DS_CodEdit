@@ -43,6 +43,8 @@ namespace TextEditor {
     void MoveDown(void);
     void Backspace(void);
     void InsertText(const std::string &text);
+    void InsertNewLine(void);
+    bool ReplaceCurrentLine(const std::string &text);
 
     bool Undo(void);
     bool Redo(void);
