@@ -60,6 +60,29 @@ It combines a lightweight multi-tab text editor, project Git workflow, file mana
 - In editor, `SELECT` opens/closes the top menu (`File`, `Edit`, `Search`, `View`, `Project`).
 - `Project` opens the Git panel.
 
+## Install Prebuilt Release (v1.0.0)
+
+If you just want to run 3DS CodEdit, you can use the prebuilt binaries from the official release:
+
+- Release page: https://github.com/dcuevasa/3DS_CodEdit/releases/tag/v.1.0.0
+- 3DSX: https://github.com/dcuevasa/3DS_CodEdit/releases/download/v.1.0.0/3DS_CodEdit.3dsx
+- CIA: https://github.com/dcuevasa/3DS_CodEdit/releases/download/v.1.0.0/3DS_CodEdit.cia
+
+### Option A: Install 3DSX (Homebrew Launcher)
+
+1. Download `3DS_CodEdit.3dsx` from the release link above.
+2. Power off your 3DS and insert the SD card into your PC.
+3. Copy the file to the SD card in the path.
+4. Put the SD card back in the 3DS and launch it from Homebrew Launcher.
+
+### Option B: Install CIA (Home Menu)
+
+1. Download `3DS_CodEdit.cia` from the release link above.
+2. Copy the `.cia` file to any folder on your SD card.
+3. Open FBI on your 3DS.
+4. Navigate to the `.cia` file and choose Install CIA (or Install and delete CIA).
+5. Return to HOME Menu and launch 3DS CodEdit like a regular installed app.
+
 ## Building From Source (Linux)
 
 The steps below are written for Debian/Ubuntu based systems and should also work in WSL.
