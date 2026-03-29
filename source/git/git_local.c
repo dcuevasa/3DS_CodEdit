@@ -41,6 +41,20 @@ typedef struct {
 } StageList;
 
 typedef struct {
+    char base_rel[GIT_PATH_MAX];
+    char pattern[GIT_PATH_MAX];
+    bool negate;
+    bool directory_only;
+    bool anchored;
+} IgnoreRule;
+
+typedef struct {
+    IgnoreRule *items;
+    size_t count;
+    size_t capacity;
+} IgnoreRuleList;
+
+typedef struct {
     char name[256];
     unsigned char oid[GIT_SHA1_DIGEST_SIZE];
     uint32_t mode;
@@ -710,6 +724,285 @@ static void stage_list_sort(StageList *list) {
     qsort(list->items, list->count, sizeof(StageEntry), stage_entry_compare);
 }
 
+static void ignore_rule_list_init(IgnoreRuleList *list) {
+    if (!list)
+        return;
+
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+static void ignore_rule_list_free(IgnoreRuleList *list) {
+    if (!list)
+        return;
+
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+static void ignore_rule_list_truncate(IgnoreRuleList *list, size_t count) {
+    if (!list)
+        return;
+
+    if (count < list->count)
+        list->count = count;
+}
+
+static GitResult ignore_rule_list_push(IgnoreRuleList *list, const IgnoreRule *rule) {
+    if (!list || !rule)
+        return GIT_RESULT_INVALID_ARG;
+
+    if (list->count == list->capacity) {
+        size_t new_capacity = (list->capacity == 0) ? 32 : (list->capacity * 2);
+        IgnoreRule *new_items = (IgnoreRule *)realloc(list->items, new_capacity * sizeof(IgnoreRule));
+
+        if (!new_items)
+            return GIT_RESULT_IO_ERROR;
+
+        list->items = new_items;
+        list->capacity = new_capacity;
+    }
+
+    list->items[list->count++] = *rule;
+    return GIT_RESULT_OK;
+}
+
+static bool rel_path_starts_with_dir(const char *rel_path, const char *dir_rel, const char **out_subpath) {
+    size_t dir_len;
+
+    if (!rel_path || !dir_rel || !out_subpath)
+        return false;
+
+    if (dir_rel[0] == '\0') {
+        *out_subpath = rel_path;
+        return true;
+    }
+
+    dir_len = strlen(dir_rel);
+    if (strncmp(rel_path, dir_rel, dir_len) != 0)
+        return false;
+
+    if (rel_path[dir_len] == '\0') {
+        *out_subpath = "";
+        return true;
+    }
+
+    if (rel_path[dir_len] != '/')
+        return false;
+
+    *out_subpath = rel_path + dir_len + 1;
+    return true;
+}
+
+static const char *path_basename(const char *path) {
+    const char *slash;
+
+    if (!path)
+        return "";
+
+    slash = strrchr(path, '/');
+    return slash ? (slash + 1) : path;
+}
+
+static bool gitignore_glob_match(const char *pattern, const char *text) {
+    if (!pattern || !text)
+        return false;
+
+    while (*pattern != '\0') {
+        if (pattern[0] == '*' && pattern[1] == '*') {
+            pattern += 2;
+
+            while (*pattern == '*')
+                pattern++;
+
+            if (*pattern == '\0')
+                return true;
+
+            for (; *text != '\0'; text++) {
+                if (gitignore_glob_match(pattern, text))
+                    return true;
+            }
+
+            return gitignore_glob_match(pattern, text);
+        }
+
+        if (*pattern == '*') {
+            pattern++;
+
+            while (true) {
+                if (gitignore_glob_match(pattern, text))
+                    return true;
+
+                if (*text == '\0' || *text == '/')
+                    break;
+
+                text++;
+            }
+
+            return false;
+        }
+
+        if (*pattern == '?') {
+            if (*text == '\0' || *text == '/')
+                return false;
+
+            pattern++;
+            text++;
+            continue;
+        }
+
+        if (*pattern != *text)
+            return false;
+
+        pattern++;
+        text++;
+    }
+
+    return *text == '\0';
+}
+
+static bool gitignore_rule_matches(const IgnoreRule *rule, const char *rel_path, bool is_dir) {
+    const char *subpath = NULL;
+    bool has_slash;
+
+    if (!rule || !rel_path)
+        return false;
+
+    if (rule->directory_only && !is_dir)
+        return false;
+
+    if (!rel_path_starts_with_dir(rel_path, rule->base_rel, &subpath))
+        return false;
+
+    if (subpath[0] == '\0')
+        return false;
+
+    has_slash = strchr(rule->pattern, '/') != NULL;
+
+    if (rule->anchored || has_slash)
+        return gitignore_glob_match(rule->pattern, subpath);
+
+    return gitignore_glob_match(rule->pattern, path_basename(subpath));
+}
+
+static bool gitignore_is_ignored(const IgnoreRuleList *rules, const char *rel_path, bool is_dir) {
+    bool ignored = false;
+    size_t i;
+
+    if (!rules || !rel_path)
+        return false;
+
+    for (i = 0; i < rules->count; i++) {
+        if (gitignore_rule_matches(&rules->items[i], rel_path, is_dir))
+            ignored = !rules->items[i].negate;
+    }
+
+    return ignored;
+}
+
+static GitResult load_gitignore_rules_for_dir(FS_Archive archive, const char *current_abs, const char *current_rel,
+    IgnoreRuleList *rules) {
+    char gitignore_path[GIT_PATH_MAX];
+    unsigned char *data = NULL;
+    size_t size = 0;
+    size_t line_start = 0;
+    size_t i;
+    GitResult result;
+
+    if (!current_abs || !current_rel || !rules)
+        return GIT_RESULT_INVALID_ARG;
+
+    if (!join_path(current_abs, ".gitignore", gitignore_path, sizeof(gitignore_path)))
+        return GIT_RESULT_BUFFER_TOO_SMALL;
+
+    result = read_file_alloc(archive, gitignore_path, &data, &size);
+    if (result == GIT_RESULT_NOT_FOUND)
+        return GIT_RESULT_OK;
+
+    if (result != GIT_RESULT_OK)
+        return result;
+
+    for (i = 0; i <= size; i++) {
+        if (i == size || data[i] == '\n') {
+            char saved = ((char *)data)[i];
+            char *line;
+
+            ((char *)data)[i] = '\0';
+            line = (char *)data + line_start;
+
+            while (*line != '\0') {
+                size_t len = strlen(line);
+
+                if (len == 0 || line[len - 1] != '\r')
+                    break;
+
+                line[len - 1] = '\0';
+            }
+
+            if (line[0] != '\0' && line[0] != '#') {
+                IgnoreRule rule;
+                char *pattern = line;
+                size_t pattern_len;
+
+                memset(&rule, 0, sizeof(rule));
+
+                if (snprintf(rule.base_rel, sizeof(rule.base_rel), "%s", current_rel) < 0 ||
+                    strlen(rule.base_rel) >= sizeof(rule.base_rel)) {
+                    ((char *)data)[i] = saved;
+                    free(data);
+                    return GIT_RESULT_BUFFER_TOO_SMALL;
+                }
+
+                if (pattern[0] == '\\' && (pattern[1] == '#' || pattern[1] == '!')) {
+                    pattern++;
+                }
+                else if (pattern[0] == '!') {
+                    rule.negate = true;
+                    pattern++;
+                }
+
+                if (pattern[0] == '/') {
+                    rule.anchored = true;
+                    while (pattern[0] == '/')
+                        pattern++;
+                }
+
+                pattern_len = strlen(pattern);
+                while (pattern_len > 0 && pattern[pattern_len - 1] == '/') {
+                    rule.directory_only = true;
+                    pattern[pattern_len - 1] = '\0';
+                    pattern_len--;
+                }
+
+                if (pattern_len > 0) {
+                    if (snprintf(rule.pattern, sizeof(rule.pattern), "%s", pattern) < 0 ||
+                        strlen(rule.pattern) >= sizeof(rule.pattern)) {
+                        ((char *)data)[i] = saved;
+                        free(data);
+                        return GIT_RESULT_BUFFER_TOO_SMALL;
+                    }
+
+                    result = ignore_rule_list_push(rules, &rule);
+                    if (result != GIT_RESULT_OK) {
+                        ((char *)data)[i] = saved;
+                        free(data);
+                        return result;
+                    }
+                }
+            }
+
+            ((char *)data)[i] = saved;
+            line_start = i + 1;
+        }
+    }
+
+    free(data);
+    return GIT_RESULT_OK;
+}
+
 static bool entry_name_to_ascii(const FS_DirectoryEntry *entry, char *out_name, size_t out_name_len) {
     size_t i = 0;
 
@@ -759,16 +1052,25 @@ static GitResult add_file_to_stage(FS_Archive archive, const char *repo_root, co
 }
 
 static GitResult scan_directory_for_add(FS_Archive archive, const char *repo_root, const char *current_abs,
-    const char *current_rel, int depth, StageList *staged) {
+    const char *current_rel, int depth, StageList *staged, IgnoreRuleList *ignore_rules) {
     Handle dir = 0;
     u32 entry_count = 0;
     GitResult result = GIT_RESULT_OK;
+    size_t rule_checkpoint = 0;
 
     if (!repo_root || !current_abs || !staged)
         return GIT_RESULT_INVALID_ARG;
 
     if (depth > GIT_MAX_TREE_DEPTH)
         return GIT_RESULT_IO_ERROR;
+
+    if (ignore_rules) {
+        rule_checkpoint = ignore_rules->count;
+
+        result = load_gitignore_rules_for_dir(archive, current_abs, current_rel ? current_rel : "", ignore_rules);
+        if (result != GIT_RESULT_OK)
+            return result;
+    }
 
     if (R_FAILED(FSUSER_OpenDirectory(&dir, archive, fsMakePath(PATH_ASCII, current_abs))))
         return GIT_RESULT_IO_ERROR;
@@ -820,11 +1122,17 @@ static GitResult scan_directory_for_add(FS_Archive archive, const char *repo_roo
             if (strcmp(entry_name, ".git") == 0)
                 continue;
 
-            result = scan_directory_for_add(archive, repo_root, child_abs, child_rel, depth + 1, staged);
+            if (ignore_rules && gitignore_is_ignored(ignore_rules, child_rel, true))
+                continue;
+
+            result = scan_directory_for_add(archive, repo_root, child_abs, child_rel, depth + 1, staged, ignore_rules);
             if (result != GIT_RESULT_OK)
                 break;
         }
         else {
+            if (ignore_rules && gitignore_is_ignored(ignore_rules, child_rel, false))
+                continue;
+
             result = add_file_to_stage(archive, repo_root, child_abs, child_rel, staged);
             if (result != GIT_RESULT_OK)
                 break;
@@ -832,6 +1140,10 @@ static GitResult scan_directory_for_add(FS_Archive archive, const char *repo_roo
     } while (entry_count > 0);
 
     FSDIR_Close(dir);
+
+    if (ignore_rules)
+        ignore_rule_list_truncate(ignore_rules, rule_checkpoint);
+
     return result;
 }
 
@@ -1432,6 +1744,7 @@ GitResult git_add_all(const char *start_path, char *out_message, size_t out_mess
     FS_Archive archive;
     char repo_root[GIT_PATH_MAX];
     StageList staged;
+    IgnoreRuleList ignore_rules;
     GitResult result;
 
     if (!git_find_repository_root(start_path, repo_root, sizeof(repo_root))) {
@@ -1445,10 +1758,12 @@ GitResult git_add_all(const char *start_path, char *out_message, size_t out_mess
     }
 
     stage_list_init(&staged);
+    ignore_rule_list_init(&ignore_rules);
 
-    result = scan_directory_for_add(archive, repo_root, repo_root, "", 0, &staged);
+    result = scan_directory_for_add(archive, repo_root, repo_root, "", 0, &staged, &ignore_rules);
     if (result != GIT_RESULT_OK) {
         stage_list_free(&staged);
+        ignore_rule_list_free(&ignore_rules);
         close_sdmc_archive(archive);
         set_message(out_message, out_message_len, "Failed while scanning files");
         return result;
@@ -1467,6 +1782,7 @@ GitResult git_add_all(const char *start_path, char *out_message, size_t out_mess
     }
 
     stage_list_free(&staged);
+    ignore_rule_list_free(&ignore_rules);
     close_sdmc_archive(archive);
     return result;
 }

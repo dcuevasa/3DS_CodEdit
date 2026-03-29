@@ -171,6 +171,13 @@ namespace GUI {
             path.append(filename);
             TextEditor::OpenFile(path);
         }
+        else if (FS::GetFileExt(filename) == ".PBM") {
+            std::string path = cfg.cwd;
+            path.append(filename);
+
+            if (DrawingOpenFile(path))
+                item->state = MENU_STATE_DRAWING;
+        }
     }
 
     static void GoToParentDir(MenuItem *item) {
@@ -319,7 +326,7 @@ namespace GUI {
         DrawSidebarActionButton(0, "SAVE");
         DrawSidebarActionButton(1, "+FILE");
         DrawSidebarActionButton(2, "+DIR");
-        DrawSidebarActionButton(3, "FIND");
+        DrawSidebarActionButton(3, "DRAW");
         DrawSidebarActionButton(4, "UP");
 
         C2D::Textf(6, 50, 0.3f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
@@ -331,7 +338,7 @@ namespace GUI {
         }
         else {
             C2D::Text(6, 63, 0.29f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
-                "CirclePad cursor  DPad U/D files  <- parent");
+                "A open  B backspace  X edit  Y newline");
         }
 
         EnsureSidebarSelection(item);
@@ -364,7 +371,7 @@ namespace GUI {
         }
         else {
             C2D::Text(6, 203, 0.29f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
-                "A open  B delete  X edit  Y newline  -> close");
+                "CPad cursor  DPad U/D files  Left parent  Right close tab");
         }
     }
 
@@ -464,8 +471,10 @@ namespace GUI {
                 CreateFileEntry(item);
             else if (Touch::Rect(130, 24, 190, 44))
                 CreateFolderEntry(item);
-            else if (Touch::Rect(193, 24, 253, 44))
-                FindText();
+            else if (Touch::Rect(193, 24, 253, 44)) {
+                DrawingStartNew();
+                item->state = MENU_STATE_DRAWING;
+            }
             else if (Touch::Rect(256, 24, 316, 44))
                 GoToParentDir(item);
             else {

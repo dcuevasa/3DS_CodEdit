@@ -58,6 +58,9 @@ namespace GUI {
             C2D::Textf(45, start_y + ((sel_dist - filename_height) / 2) + (i - start) * sel_dist, 0.45f, cfg.dark_theme? WHITE : BLACK,
                 filename.length() > 52? "%.52s..." : "%s", filename.c_str());
         }
+
+        C2D::Text(5, 224, 0.27f, cfg.dark_theme ? TEXT_MIN_COLOUR_DARK : TEXT_MIN_COLOUR_LIGHT,
+            "A open  B parent  X actions  SELECT/Home editor");
     }
 
     void ControlFileBrowser(MenuItem *item, u32 *kDown, u32 *kHeld) {
@@ -101,6 +104,14 @@ namespace GUI {
                 start = size - (max_entries - 1);
         }
 
+        if (*kDown & KEY_SELECT) {
+            if (!TextEditor::HasActiveDocument())
+                TextEditor::NewFile("untitled.txt");
+
+            item->state = MENU_STATE_TEXTREADER;
+            return;
+        }
+
         if (*kDown & KEY_A) {
             const std::u16string entry_name_utf16 = reinterpret_cast<const char16_t *>(item->entries[item->selected].name);
             const std::string filename = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(entry_name_utf16.data());
@@ -125,8 +136,13 @@ namespace GUI {
                 
                 switch(file_type) {
                     case FileTypeImage:
-                        if (Textures::LoadImageFile(path, &item->texture))
+                        if (FS::GetFileExt(filename) == ".PBM") {
+                            if (DrawingOpenFile(path))
+                                item->state = MENU_STATE_DRAWING;
+                        }
+                        else if (Textures::LoadImageFile(path, &item->texture)) {
                             item->state = MENU_STATE_IMAGEVIEWER;
+                        }
                         break;
 
                     case FileTypeText:

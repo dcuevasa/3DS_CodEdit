@@ -30,6 +30,14 @@ GitResult git_get_staged_count(const char *start_path, int *out_staged_count);
 GitResult git_add_all(const char *start_path, char *out_message, size_t out_message_len);
 GitResult git_commit(const char *start_path, const char *message, char *out_commit_oid, size_t out_commit_oid_len,
     char *out_message, size_t out_message_len);
+GitResult git_get_saved_remote_state(const char *start_path,
+    char *out_remote_url, size_t out_remote_url_len,
+    char *out_branch, size_t out_branch_len,
+    char *out_head_oid, size_t out_head_oid_len);
+GitResult git_set_saved_remote_state(const char *start_path,
+    const char *remote_url,
+    const char *branch,
+    char *out_message, size_t out_message_len);
 GitResult git_remote_probe_github(const char *remote_url, const char *token,
     char *out_default_branch, size_t out_default_branch_len,
     char *out_head_oid, size_t out_head_oid_len,

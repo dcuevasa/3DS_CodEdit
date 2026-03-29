@@ -3,6 +3,7 @@
 
 #include <3ds.h>
 #include <citro2d.h>
+#include <string>
 #include <vector>
 
 enum MENU_STATES {
@@ -15,6 +16,7 @@ enum MENU_STATES {
     MENU_STATE_ARCHIVEEXTRACT,
     MENU_STATE_TEXTREADER,
     MENU_STATE_GIT,
+    MENU_STATE_DRAWING,
     MENU_STATE_UPDATE
 };
 
@@ -56,6 +58,11 @@ namespace GUI {
     void ControlTextReader(MenuItem *item, u32 *kDown, u32 *kHeld);
     void DisplayGitView(MenuItem *item);
     void ControlGitView(MenuItem *item, u32 *kDown, u32 *kHeld);
+    void DisplayDrawingTop(MenuItem *item);
+    void DisplayDrawingBottom(MenuItem *item);
+    void ControlDrawingView(MenuItem *item, u32 *kDown, u32 *kHeld);
+    void DrawingStartNew(void);
+    bool DrawingOpenFile(const std::string &path);
     void DisplayDeleteOptions(MenuItem *item);
     void ControlDeleteOptions(MenuItem *item, u32 *kDown);
     void DisplayUpdateOptions(bool *connection_status, bool *available, const std::string &tag);

@@ -101,8 +101,17 @@ namespace GUI {
     }
 
     static void ControlTouchButtons(MenuItem *item, u32 *kDown) {
-        if ((*kDown & KEY_TOUCH) && (Touch::Rect(0, 0, 22, 20)))
-            item->state = MENU_STATE_FILEBROWSER;
+        if ((*kDown & KEY_TOUCH) && (Touch::Rect(0, 0, 22, 20))) {
+            if (item->state == MENU_STATE_FILEBROWSER) {
+                if (!TextEditor::HasActiveDocument())
+                    TextEditor::NewFile("untitled.txt");
+
+                item->state = MENU_STATE_TEXTREADER;
+            }
+            else {
+                item->state = MENU_STATE_FILEBROWSER;
+            }
+        }
         else if ((*kDown & KEY_TOUCH) && (Touch::Rect(23, 0, 47, 20)))
             item->state = MENU_STATE_OPTIONS;
         else if ((*kDown & KEY_TOUCH) && (Touch::Rect(48, 0, 72, 20)))
@@ -177,6 +186,8 @@ namespace GUI {
 
             if ((item.state == MENU_STATE_TEXTREADER) || (item.state == MENU_STATE_GIT))
                 GUI::DisplayTextReaderTop(&item);
+            else if (item.state == MENU_STATE_DRAWING)
+                GUI::DisplayDrawingTop(&item);
             else {
                 GUI::DisplayFileBrowser(&item);
 
@@ -190,6 +201,8 @@ namespace GUI {
                 C2D::Text(6, 3, 0.36f, WHITE, "Explorer");
             else if (item.state == MENU_STATE_GIT)
                 C2D::Text(6, 3, 0.36f, WHITE, "Project");
+            else if (item.state == MENU_STATE_DRAWING)
+                C2D::Text(6, 3, 0.36f, WHITE, "Draw");
             else
                 GUI::DisplayTouchButtons(&item);
 
@@ -220,6 +233,10 @@ namespace GUI {
 
                 case MENU_STATE_GIT:
                     DisplayGitView(&item);
+                    break;
+
+                case MENU_STATE_DRAWING:
+                    DisplayDrawingBottom(&item);
                     break;
 
                 default:
@@ -266,11 +283,15 @@ namespace GUI {
                     GUI::ControlGitView(&item, &kDown, &kHeld);
                     break;
 
+                case MENU_STATE_DRAWING:
+                    GUI::ControlDrawingView(&item, &kDown, &kHeld);
+                    break;
+
                 default:
                     break;
             }
 
-            if ((item.state != MENU_STATE_TEXTREADER) && (item.state != MENU_STATE_GIT))
+            if ((item.state != MENU_STATE_TEXTREADER) && (item.state != MENU_STATE_GIT) && (item.state != MENU_STATE_DRAWING))
                 GUI::ControlTouchButtons(&item, &kDown);
 
             if ((kDown & KEY_START) || (setjmp(exit_jmp)))
