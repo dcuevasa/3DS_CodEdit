@@ -58,6 +58,8 @@ If you just want to run 3DS CodEdit, you can use the prebuilt binaries from the 
 	- pull (fast-forward),
 	- push,
 	- personal access token storage.
+- Example repository with commits made from 3DS CodEdit:
+	- https://github.com/dcuevasa/this_repo_gets_commits_from_a_3ds
 - `.gitignore` support in add-all and push file scanning.
 - Multi-repository safety improvements:
 	- repository-local remote/branch state is preferred,
